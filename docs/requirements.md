@@ -95,13 +95,13 @@
 | E2E テスト | Playwright。**デスクトップ（マウス）と iPad（タッチ）** の両方で、全章を最初から最後まで操作する |
 | Node.js | 20 |
 
-`next.config.ts` は `basePath` と `assetPrefix` を環境変数 `NEXT_PUBLIC_BASE_PATH` から読む（公開先ごとにルートフォルダーが違うため）。
+`next.config.ts` は `basePath` と `assetPrefix` を環境変数 `NEXT_PUBLIC_BASE_PATH` から読む（公開先ごとにルートフォルダーが違うため）。章ページは `chapter/1/index.html` の形で書き出す（`trailingSlash: true`）。
 
 ### 6.2 CI/CD（GitHub Actions）
 
 | ワークフロー | タイミング | 内容 |
 |---|---|---|
-| `e2e.yml` | PR、`main` への push | ビルドして Playwright E2E（chromium・webkit）を実行し、レポートを保存する |
+| `e2e.yml` | PR、`main` への push | Lint・型チェック・ビルドのあと Playwright E2E（chromium・webkit）を実行し、レポートを保存する |
 | `deploy.yml` | `main` への push | `NEXT_PUBLIC_BASE_PATH=/Intellectual-Property-Rights-IPR-Overview` でビルドし、GitHub Pages へ公開する |
 | `deploy-ftp.yml` | `main` への push | 共通ワークフロー `renly24/edu-deploy-workflows/.github/workflows/ftp-deploy.yml@main` を `secrets: inherit` で呼ぶ。`project-dir: edu-copyright` |
 
@@ -119,6 +119,6 @@
 
 - [x] 章構成案（3章）の確定 — 10章構成で確定
 - [x] MVPの範囲 — **第1〜3章を完成**させ、ドラッグ仕分け・スワイプ判定・文中タップ指摘の3形式を一通り実装する
-- [ ] 画面モック（章一覧・解説・各操作問題）の確認
-- [ ] MVP実装
+- [x] 画面モック（章一覧・解説・各操作問題）の確認
+- [x] MVP実装（第1〜3章、GitHub Actions）
 - [ ] 第4章以降のコンテンツ追加
