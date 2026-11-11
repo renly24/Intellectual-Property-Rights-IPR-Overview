@@ -1,0 +1,17 @@
+name: Deploy to FTP server
+
+# main へ push すると、教材共通のワークフロー（renly24/edu-deploy-workflows）でビルドし、
+# FTP サーバーの digital/edu-copyright/ にアップロードする。
+# 公開 URL: http://e.gmobb.jp/omaesensei/digital/edu-copyright/
+# 必要な Secrets: FTP_HOST, FTP_USER, FTP_PASS（Settings → Secrets and variables → Actions）
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: renly24/edu-deploy-workflows/.github/workflows/ftp-deploy.yml@main
+    secrets: inherit
+    with:
+      project-dir: edu-copyright
