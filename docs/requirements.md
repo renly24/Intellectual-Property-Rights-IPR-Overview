@@ -74,12 +74,41 @@
 | 項目 | 内容 |
 |---|---|
 | 形態 | 静的Webアプリ（サーバー不要） |
-| 技術構成 | React + Vite + TypeScript |
-| 公開 | GitHub Pages |
+| 技術構成 | 6.1 のとおり、ほかの edu 系教材リポジトリにそろえる |
+| 公開 | GitHub Pages と FTP サーバー（6.2） |
 | コンテンツ管理 | 解説・問題は JSON 等のデータファイルに分離し、コード変更なしで追加・修正できる |
+| 画面構成 | モックのとおり「章一覧 → 解説 → 操作問題 → まとめ」（ほかの教材のスライド形式にはしない）。部品とテーマは MUI でほかの教材に寄せる |
 | デザイン | 落ち着いた教材風（白基調・読みやすい文字・重要語のみ色付け） |
 | 操作性 | タッチ対象は十分な大きさ（目安 44px 以上）、横向き・縦向きの両方に対応 |
 | 個人情報 | 収集しない。データは端末内のみに保存 |
+
+### 6.1 技術スタック
+
+参考：`renly24/edu-public-key-simulator`、`renly24/edu-symmetric-key-simulator` ほか
+
+| 項目 | 採用 |
+|---|---|
+| フレームワーク | Next.js 16.2.6（App Router、`output: "export"`、`distDir: "out"`） |
+| UI | React 19.2.4、MUI v7（`@mui/material`、`@mui/icons-material`、`@mui/material-nextjs`、Emotion） |
+| 言語 | TypeScript |
+| Lint・整形 | ESLint 9（`eslint-config-next`）、Prettier |
+| E2E テスト | Playwright。**デスクトップ（マウス）と iPad（タッチ）** の両方で、全章を最初から最後まで操作する |
+| Node.js | 20 |
+
+`next.config.ts` は `basePath` と `assetPrefix` を環境変数 `NEXT_PUBLIC_BASE_PATH` から読む（公開先ごとにルートフォルダーが違うため）。
+
+### 6.2 CI/CD（GitHub Actions）
+
+| ワークフロー | タイミング | 内容 |
+|---|---|---|
+| `e2e.yml` | PR、`main` への push | ビルドして Playwright E2E（chromium・webkit）を実行し、レポートを保存する |
+| `deploy.yml` | `main` への push | `NEXT_PUBLIC_BASE_PATH=/Intellectual-Property-Rights-IPR-Overview` でビルドし、GitHub Pages へ公開する |
+| `deploy-ftp.yml` | `main` への push | 共通ワークフロー `renly24/edu-deploy-workflows/.github/workflows/ftp-deploy.yml@main` を `secrets: inherit` で呼ぶ。`project-dir: edu-copyright` |
+
+- FTP の公開 URL：`http://e.gmobb.jp/omaesensei/digital/edu-copyright/`
+- リポジトリ Secrets に `FTP_HOST`・`FTP_USER`・`FTP_PASS` の登録が必要（`edu-deploy-workflows` の「Sync FTP secrets」でコピーできる）
+- GitHub Pages は Settings → Pages の Source を「GitHub Actions」にする
+- 教材一覧ページ（`digital/index.html`）へのリンク追加は手作業
 
 ## 7. コンテンツ作成方針
 
