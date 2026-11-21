@@ -2,9 +2,23 @@ import type { Chapter, ChapterMeta } from "./types";
 import chapter1 from "./chapters/chapter1.json";
 import chapter2 from "./chapters/chapter2.json";
 import chapter3 from "./chapters/chapter3.json";
+import chapter4 from "./chapters/chapter4.json";
+import chapter5 from "./chapters/chapter5.json";
+import chapter6 from "./chapters/chapter6.json";
+import chapter7 from "./chapters/chapter7.json";
+import chapter8 from "./chapters/chapter8.json";
 
 /** 中身のある章。章を追加したら JSON を作ってここに足す */
-export const CHAPTERS: Chapter[] = [chapter1, chapter2, chapter3] as Chapter[];
+export const CHAPTERS: Chapter[] = [
+  chapter1,
+  chapter2,
+  chapter3,
+  chapter4,
+  chapter5,
+  chapter6,
+  chapter7,
+  chapter8,
+] as Chapter[];
 
 /** 章一覧に出す全9章（中身がまだの章は「準備中」） */
 const PLANNED: { id: number; title: string }[] = [
