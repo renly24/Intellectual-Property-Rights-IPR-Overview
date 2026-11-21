@@ -103,7 +103,7 @@
 |---|---|---|
 | `e2e.yml` | PR、`main` への push | Lint・型チェック・ビルドのあと Playwright E2E（chromium・webkit）を実行し、レポートを保存する |
 | `deploy.yml` | `main` への push | `NEXT_PUBLIC_BASE_PATH=/Intellectual-Property-Rights-IPR-Overview` でビルドし、GitHub Pages へ公開する |
-| `deploy-ftp.yml` | `main` への push | 共通ワークフロー `renly24/edu-deploy-workflows/.github/workflows/ftp-deploy.yml@main` を `secrets: inherit` で呼ぶ。`project-dir: edu-copyright` |
+| `deploy-ftp.yml` | `main` への push | 共通ワークフロー `renly24/edu-deploy-workflows` の `ftp-deploy.yml` と同じ手順を直接書く（共通側のサーバー証明書の指紋が古く接続できないため）。アップロード先は `digital/edu-copyright/` |
 
 - FTP の公開 URL：`http://e.gmobb.jp/omaesensei/digital/edu-copyright/`
 - リポジトリ Secrets に `FTP_HOST`・`FTP_USER`・`FTP_PASS` の登録が必要（`edu-deploy-workflows` の「Sync FTP secrets」でコピーできる）

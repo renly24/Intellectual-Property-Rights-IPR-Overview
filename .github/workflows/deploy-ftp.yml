@@ -1,17 +1,113 @@
 name: Deploy to FTP server
 
-# main へ push すると、教材共通のワークフロー（renly24/edu-deploy-workflows）でビルドし、
-# FTP サーバーの digital/edu-copyright/ にアップロードする。
+# main へ push すると、ビルドして FTP サーバーの digital/edu-copyright/ にアップロードする。
 # 公開 URL: http://e.gmobb.jp/omaesensei/digital/edu-copyright/
-# 必要な Secrets: FTP_HOST, FTP_USER, FTP_PASS（Settings → Secrets and variables → Actions）
+#
+# 手順は共通ワークフロー renly24/edu-deploy-workflows の ftp-deploy.yml と同じ。
+# 共通ワークフローのサーバー証明書の指紋が古く接続できないため、このリポジトリに直接書いている。
+# 共通ワークフローが新しい指紋に直ったら、次の形に戻してよい:
+#   jobs:
+#     deploy:
+#       uses: renly24/edu-deploy-workflows/.github/workflows/ftp-deploy.yml@main
+#       secrets: inherit
+#       with:
+#         project-dir: edu-copyright
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ftp-deploy-${{ github.repository }}
+  cancel-in-progress: false
+
+env:
+  # FTP のログイン直後のフォルダーは http://e.gmobb.jp/omaesensei/ として公開される
+  PUBLIC_ORIGIN: http://e.gmobb.jp
+  # FTP サーバー上のアップロード先（ログイン直後のフォルダーからの相対パス）
+  REMOTE_DIR: digital/edu-copyright
+  # 公開 URL のパス部分
+  BASE_PATH: /omaesensei/digital/edu-copyright
+  # サーバー証明書は発行元が不明なため、この証明書（SHA-1 指紋）だけを信頼する。
+  # サーバーの証明書が更新されたら、ここを新しい指紋に書き換える。
+  FTP_CERT_FINGERPRINT: "B1:F9:00:DB:E4:84:0B:B8:7B:28:0E:1D:29:A4:ED:FF:E6:4B:BE:B6"
+
 jobs:
   deploy:
-    uses: renly24/edu-deploy-workflows/.github/workflows/ftp-deploy.yml@main
-    secrets: inherit
-    with:
-      project-dir: edu-copyright
+    runs-on: ubuntu-latest
+    steps:
+      # 認証情報はリポジトリごとに登録が必要（Settings → Secrets and variables → Actions）
+      - name: Check FTP secrets
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          missing=""
+          for name in FTP_HOST FTP_USER FTP_PASS; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::リポジトリのシークレットが未登録です:$missing"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static export
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: ${{ env.BASE_PATH }}
+
+      - name: Check the export uses the base path
+        run: |
+          test -f out/index.html || { echo "::error::out/index.html がありません（output: \"export\" / distDir: \"out\" を確認）"; exit 1; }
+          grep -qF "\"$BASE_PATH/_next/" out/index.html \
+            || { echo "::error::basePath が反映されていません（next.config.ts が NEXT_PUBLIC_BASE_PATH を読んでいるか確認）"; exit 1; }
+
+      # FTP サーバーは名前に ".." を含むファイルを受け付けない（550 Not owner）ので、
+      # ドットを 1 つにまとめて改名し、HTML / JS / CSS などの参照も書き換える
+      - name: Rename files the FTP server rejects
+        run: node scripts/sanitize-export.mjs out
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Upload via FTPS
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASS }}
+        run: |
+          # シークレットを貼り付けたときに末尾へ入った改行・空白を取り除く
+          # （改行が残ると lftp のコマンドが途中で切れて接続できない）
+          FTP_HOST="${FTP_HOST//[[:space:]]/}"
+          FTP_USER="${FTP_USER//[[:space:]]/}"
+          export LFTP_PASSWORD="${LFTP_PASSWORD%%[$'\r\n']*}"
+          # --delete はアップロード先フォルダーの中だけに効く（他の教材には触れない）
+          lftp -c "
+            set net:timeout 30; set net:max-retries 2;
+            set ftp:ssl-force yes; set ftp:ssl-protect-data yes;
+            set ssl:verify-certificate yes;
+            set ssl:verify-certificate/$FTP_CERT_FINGERPRINT no;
+            open --env-password -u '$FTP_USER' '$FTP_HOST';
+            mirror --reverse --delete --verbose --parallel=4 out/ '$REMOTE_DIR/'"
+
+      - name: Check the published page
+        run: |
+          url="$PUBLIC_ORIGIN$BASE_PATH/"
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$url")
+          echo "$code $url"
+          test "$code" = 200
+          echo "### Deployed: $url" >> "$GITHUB_STEP_SUMMARY"

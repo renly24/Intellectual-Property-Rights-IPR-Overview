@@ -55,7 +55,7 @@ npm run test:e2e   # ビルド済みの out/ を、デスクトップ（マウ�
 | --- | --- | --- |
 | `e2e.yml` | PR、`main` への push | Lint・型チェック・ビルド・E2E テスト |
 | `deploy.yml` | `main` への push | GitHub Pages へ公開（Settings → Pages で Source を「GitHub Actions」にしておく） |
-| `deploy-ftp.yml` | `main` への push | 共通ワークフロー [`renly24/edu-deploy-workflows`](https://github.com/renly24/edu-deploy-workflows) で FTP サーバーの `digital/edu-copyright/` へ公開 |
+| `deploy-ftp.yml` | `main` への push | FTP サーバーの `digital/edu-copyright/` へ公開（手順は共通ワークフロー [`renly24/edu-deploy-workflows`](https://github.com/renly24/edu-deploy-workflows) と同じ。共通側のサーバー証明書の指紋が古いため、このリポジトリに直接書いている） |
 
 FTP へのアップロードには、リポジトリの Settings → Secrets and variables → Actions に `FTP_HOST`・`FTP_USER`・`FTP_PASS` の3つを登録しておく必要があります（`edu-deploy-workflows` の「Sync FTP secrets」でコピーできます）。
 
