@@ -166,7 +166,7 @@ test("第1〜3章を最後まで解き、間違えた問題を復習できる", 
   await expect(page.getByRole("heading", { name: /著作権を学ぼう/ })).toBeVisible();
 
   // 第1章の最初のドラッグ仕分けで、1枚だけわざと間違える
-  const mistake = { chapter: 1, step: "phone", card: "game" };
+  const mistake = { chapter: 1, step: "snack", card: "song" };
 
   for (const chapter of CHAPTERS) {
     if (chapter.id === 1) await press(page.getByRole("link", { name: "はじめる" }), info);
@@ -214,10 +214,10 @@ test("途中でページを閉じても、続きのステップから再開で�
   await page.goto("./chapter/1/");
   await solveLesson(page, CHAPTERS[0].steps[0] as LessonStep, info);
   await goNext(page, info);
-  await expect(page.getByText("スマホの中の知的財産権")).toBeVisible();
+  await expect(page.getByText("新しいお菓子と知的財産権")).toBeVisible();
 
   await page.goto("./");
   await expect(page.getByText("つづきから")).toBeVisible();
   await press(page.getByRole("link", { name: "再開する" }), info);
-  await expect(page.getByText("スマホの中の知的財産権")).toBeVisible();
+  await expect(page.getByText("新しいお菓子と知的財産権")).toBeVisible();
 });

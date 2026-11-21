@@ -6,15 +6,14 @@ import chapter3 from "./chapters/chapter3.json";
 /** 中身のある章。章を追加したら JSON を作ってここに足す */
 export const CHAPTERS: Chapter[] = [chapter1, chapter2, chapter3] as Chapter[];
 
-/** 章一覧に出す全10章（中身がまだの章は「準備中」） */
+/** 章一覧に出す全9章（中身がまだの章は「準備中」） */
 const PLANNED: { id: number; title: string }[] = [
-  { id: 4, title: "著作隣接権と保護期間" },
+  { id: 4, title: "著作隣接権・保護期間・クリエイティブ・コモンズ" },
   { id: 5, title: "許諾なく使える場合" },
-  { id: 6, title: "学校での利用" },
-  { id: 7, title: "SNS・動画投稿と著作権" },
-  { id: 8, title: "生成AIと著作権" },
-  { id: 9, title: "周辺の権利" },
-  { id: 10, title: "総合演習（共通テスト形式）" },
+  { id: 6, title: "プライバシー権と個人情報" },
+  { id: 7, title: "サイバー犯罪の種類と法律" },
+  { id: 8, title: "マルウェアと身の守り方" },
+  { id: 9, title: "総合演習（共通テスト形式）" },
 ];
 
 export const CHAPTER_LIST: ChapterMeta[] = [
