@@ -34,7 +34,22 @@ async function press(locator: Locator, info: TestInfo) {
   else await locator.click();
 }
 
+/**
+ * 授業で使う端末で、スクロールしなくても画面の中身がすべて見えるか。
+ * 「1画面に収まる」テストの間だけ確かめる（ほかのテストでは何もしない）。
+ * - 1,920×1,280 の端末を表示倍率150%で使い、ブラウザの枠を除いた大きさ：1280×740
+ * - iPad 横向きの Safari で、アドレスバーなどを除いた大きさ：1080×740
+ */
+let checkFit = false;
+async function expectFits(page: Page) {
+  if (!checkFit) return;
+  const over = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+  const where = await page.locator("h1").first().textContent();
+  expect(over, `「${where}」の画面が ${over}px はみ出しています`).toBeLessThanOrEqual(1);
+}
+
 async function goNext(page: Page, info: TestInfo) {
+  await expectFits(page);
   const next = page.getByRole("button", { name: "次へ", exact: true });
   await expect(next).toBeEnabled();
   await press(next, info);
@@ -91,6 +106,7 @@ async function solveSort(page: Page, step: SortStep, info: TestInfo, mistake?: s
       await press(page.getByRole("button", { name: `「${bin.label}」に置く` }), info);
     }
     await expect(page.locator(`[data-bin="${bin.id}"] [data-placed="${card.id}"]`)).toBeVisible();
+    await expectFits(page);
   }
   await expect(page.getByText("すべて仕分けました")).toBeVisible();
 }
@@ -111,6 +127,7 @@ async function solveSwipe(page: Page, step: SwipeStep, info: TestInfo) {
     }
     await expect(page.locator("aside").getByText(`「${card.text}」`)).toBeVisible();
     await expect(page.locator('aside [data-feedback="correct"]')).toBeVisible();
+    await expectFits(page);
   }
   await expect(page.getByText("すべて判定しました")).toBeVisible();
 }
@@ -119,8 +136,15 @@ async function solveTap(page: Page, step: TapStep, info: TestInfo) {
   for (const s of step.segments) {
     if (typeof s !== "string" && s.correct) await press(page.locator(`[data-tap="${s.id}"]`), info);
   }
+  await expectFits(page);
   await press(page.getByRole("button", { name: "答え合わせ" }), info);
   await expect(page.getByText("全部正解！")).toBeVisible();
+  // 語句ごとの解説を、画面下の「次へ」で1つずつ読む
+  const targets = step.segments.filter((s) => typeof s !== "string");
+  for (const [i, t] of targets.entries()) {
+    await expect(page.locator(`[data-tap-explanation="${t.id}"]`)).toBeVisible();
+    if (i < targets.length - 1) await goNext(page, info);
+  }
 }
 
 async function solveChoice(page: Page, step: ChoiceStep, info: TestInfo) {
@@ -282,4 +306,23 @@ test("途中でページを閉じても、続きのステップから再開で�
   await expect(page.getByText("つづきから")).toBeVisible();
   await press(page.getByRole("link", { name: "再開する" }), info);
   await expect(page.getByText("新しいお菓子と知的財産権")).toBeVisible();
+});
+
+test("どの画面も、授業で使う端末でスクロールせずに収まる", async ({ page }, info) => {
+  // デスクトップの project は 1,920×1,280 の端末（倍率150%）、タブレットの project は iPad 横向きの大きさで確かめる
+  await page.setViewportSize(isTouch(info) ? { width: 1080, height: 740 } : { width: 1280, height: 740 });
+  checkFit = true;
+  try {
+    for (const chapter of CHAPTERS) {
+      await page.goto(`./chapter/${chapter.id}/`);
+      await expect(page.getByRole("heading", { name: chapter.title, level: 1 })).toBeVisible();
+      for (const [i, step] of chapter.steps.entries()) {
+        await solveStep(page, step, info);
+        if (i < chapter.steps.length - 1) await goNext(page, info);
+      }
+      await expectFits(page); // まとめ
+    }
+  } finally {
+    checkFit = false;
+  }
 });

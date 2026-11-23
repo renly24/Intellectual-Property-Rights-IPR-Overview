@@ -6,7 +6,7 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import CheckCircleRounded from "@mui/icons-material/CheckCircleRounded";
 import ErrorOutlineRounded from "@mui/icons-material/ErrorOutlineRounded";
-import { COLORS } from "@/theme";
+import { COLORS, SHORT_SCREEN } from "@/theme";
 import Rich from "./Rich";
 
 /** 各操作問題が受け取るもの */
@@ -33,12 +33,20 @@ export type NextAction = {
 /** 問題の見出しと指示 */
 export function ActivityHeader({ title, instruction, sub }: { title: string; instruction?: string; sub?: ReactNode }) {
   return (
-    <Box sx={{ mb: 2.5 }}>
+    <Box sx={{ mb: 2.5, [SHORT_SCREEN]: { mb: 1.5 } }}>
       <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: "0.08em" }}>
         {title}
       </Typography>
       {instruction && (
-        <Typography component="h2" sx={{ fontSize: { xs: "1.15rem", sm: "1.3rem" }, fontWeight: 700, lineHeight: 1.6 }}>
+        <Typography
+          component="h2"
+          sx={{
+            fontSize: { xs: "1.15rem", sm: "1.3rem" },
+            fontWeight: 700,
+            lineHeight: 1.6,
+            [SHORT_SCREEN]: { fontSize: "1.2rem", lineHeight: 1.5 },
+          }}
+        >
           {instruction}
         </Typography>
       )}

@@ -5,7 +5,7 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import CheckRounded from "@mui/icons-material/CheckRounded";
 import type { SortStep } from "@/content/types";
-import { COLORS } from "@/theme";
+import { COLORS, SHORT_SCREEN } from "@/theme";
 import { ActivityHeader, type ActivityProps, Feedback, stableShuffle, useOnceWhen } from "./common";
 
 type Drag = { id: string; pointerId: number; startX: number; startY: number; x: number; y: number; moved: boolean };
@@ -97,165 +97,186 @@ export default function SortView({ step, onResult, onDone }: ActivityProps<SortS
       />
 
       <Box
-        aria-label="仕分けるカード"
         sx={{
-          minHeight: 88,
-          bgcolor: "#fff",
-          border: `1px dashed ${COLORS.border}`,
-          borderRadius: 4,
-          p: 2,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          alignContent: "flex-start",
-        }}
-      >
-        {pool.length === 0 && (
-          <Typography color="text.secondary" sx={{ m: "auto" }}>
-            すべて仕分けました
-          </Typography>
-        )}
-        {pool.map((c) => {
-          const on = picked === c.id;
-          const lifted = drag?.moved && drag.id === c.id;
-          return (
-            <Box
-              key={c.id}
-              component="button"
-              type="button"
-              data-card={c.id}
-              aria-pressed={on}
-              onPointerDown={(e: ReactPointerEvent<HTMLButtonElement>) => onPointerDown(e, c.id)}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={() => {
-                setDrag(null);
-                setHoverBin(null);
-              }}
-              onClick={() => onCardClick(c.id)}
-              sx={{
-                font: "inherit",
-                fontSize: "1.02rem",
-                fontWeight: on ? 700 : 500,
-                minHeight: 52,
-                px: 2.25,
-                py: 1,
-                borderRadius: 2.5,
-                border: `2px solid ${on ? COLORS.blue : COLORS.border}`,
-                bgcolor: on ? COLORS.blueSoft : "#fff",
-                color: on ? COLORS.blue : COLORS.ink,
-                boxShadow: "0 1px 2px rgba(28,36,51,0.08)",
-                cursor: "grab",
-                touchAction: "none",
-                userSelect: "none",
-                WebkitUserSelect: "none",
-                opacity: lifted ? 0.3 : 1,
-                textAlign: "left",
-              }}
-            >
-              {c.label}
-            </Box>
-          );
-        })}
-      </Box>
-
-      <Box
-        sx={{
-          mt: 2.5,
           display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: `repeat(${Math.min(step.bins.length, 2)}, minmax(0, 1fr))`,
-            md: `repeat(${step.bins.length}, minmax(0, 1fr))`,
-          },
-          gap: 2,
+          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 280px" },
+          gap: { xs: 2.5, md: 3 },
+          alignItems: "start",
         }}
       >
-        {step.bins.map((b) => {
-          const active = hoverBin === b.id || (picked !== null && !drag?.moved);
-          const inBin = cards.filter((c) => placed[c.id] === b.id);
-          return (
-            <Box
-              key={`${b.id}-${shake?.bin === b.id ? shake.n : 0}`}
-              className={shake?.bin === b.id ? "shake" : undefined}
-              data-bin={b.id}
-              onClick={() => picked && put(b.id, picked)}
-              sx={{
-                bgcolor: hoverBin === b.id ? COLORS.blueSoft : "#fff",
-                border: `2px ${active ? "dashed" : "solid"} ${active ? COLORS.blue : COLORS.border}`,
-                borderRadius: 4,
-                p: 2,
-                minHeight: 160,
-                display: "flex",
-                flexDirection: "column",
-                gap: 1.25,
-                cursor: picked ? "pointer" : "default",
-              }}
-            >
-              <Box>
-                <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>{b.label}</Typography>
-                {b.desc && (
-                  <Typography variant="body2" color="text.secondary">
-                    {b.desc}
-                  </Typography>
-                )}
-              </Box>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                {inBin.map((c) => (
-                  <Box
-                    key={c.id}
-                    className="pop"
-                    data-placed={c.id}
-                    sx={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      minHeight: 44,
-                      px: 1.75,
-                      borderRadius: 2.5,
-                      bgcolor: COLORS.blueSoft,
-                      color: COLORS.blue,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {c.label}
-                    <CheckRounded fontSize="small" />
-                  </Box>
-                ))}
-              </Box>
-              {picked && (
-                <Button
-                  variant="outlined"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    put(b.id, picked);
+        <Box>
+          <Box
+            aria-label="仕分けるカード"
+            sx={{
+              minHeight: 88,
+              bgcolor: "#fff",
+              border: `1px dashed ${COLORS.border}`,
+              borderRadius: 4,
+              p: 2,
+              [SHORT_SCREEN]: { minHeight: 64, p: 1.25, gap: 0.75 },
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 1.5,
+              alignContent: "flex-start",
+            }}
+          >
+            {pool.length === 0 && (
+              <Typography color="text.secondary" sx={{ m: "auto" }}>
+                すべて仕分けました
+              </Typography>
+            )}
+            {pool.map((c) => {
+              const on = picked === c.id;
+              const lifted = drag?.moved && drag.id === c.id;
+              return (
+                <Box
+                  key={c.id}
+                  component="button"
+                  type="button"
+                  data-card={c.id}
+                  aria-pressed={on}
+                  onPointerDown={(e: ReactPointerEvent<HTMLButtonElement>) => onPointerDown(e, c.id)}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  onPointerCancel={() => {
+                    setDrag(null);
+                    setHoverBin(null);
                   }}
-                  sx={{ mt: "auto", borderStyle: "dashed", borderWidth: 2 }}
+                  onClick={() => onCardClick(c.id)}
+                  sx={{
+                    font: "inherit",
+                    fontSize: "1.02rem",
+                    fontWeight: on ? 700 : 500,
+                    minHeight: 52,
+                    px: 2.25,
+                    py: 1,
+                    [SHORT_SCREEN]: { minHeight: 40, px: 1.5, py: 0.25, fontSize: "0.98rem" },
+                    borderRadius: 2.5,
+                    border: `2px solid ${on ? COLORS.blue : COLORS.border}`,
+                    bgcolor: on ? COLORS.blueSoft : "#fff",
+                    color: on ? COLORS.blue : COLORS.ink,
+                    boxShadow: "0 1px 2px rgba(28,36,51,0.08)",
+                    cursor: "grab",
+                    touchAction: "none",
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    opacity: lifted ? 0.3 : 1,
+                    textAlign: "left",
+                  }}
                 >
-                  「{b.label}」に置く
-                </Button>
-              )}
-            </Box>
-          );
-        })}
-      </Box>
+                  {c.label}
+                </Box>
+              );
+            })}
+          </Box>
 
-      <Box sx={{ mt: 2.5, minHeight: 96 }} aria-live="polite">
-        {last && lastCard && (
-          <Feedback
-            key={`${last.cardId}-${shake?.n ?? 0}-${Object.keys(placed).length}`}
-            correct={last.correct}
-            label={
-              last.correct ? `正解！「${lastCard.label}」` : `ちがう箱です。「${lastCard.label}」をもう一度考えよう`
-            }
-            explanation={
-              last.correct
-                ? lastCard.explanation
-                : "カードは元の場所に戻りました。それぞれの箱の説明を読んで、もう一度置いてみよう。"
-            }
-            refText={last.correct ? lastCard.ref : undefined}
-          />
-        )}
+          <Box
+            sx={{
+              mt: 2.5,
+              [SHORT_SCREEN]: { mt: 1.5 },
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: `repeat(${Math.min(step.bins.length, 2)}, minmax(0, 1fr))`,
+                md: `repeat(${step.bins.length}, minmax(0, 1fr))`,
+              },
+              gap: 2,
+            }}
+          >
+            {step.bins.map((b) => {
+              const active = hoverBin === b.id || (picked !== null && !drag?.moved);
+              const inBin = cards.filter((c) => placed[c.id] === b.id);
+              return (
+                <Box
+                  key={`${b.id}-${shake?.bin === b.id ? shake.n : 0}`}
+                  className={shake?.bin === b.id ? "shake" : undefined}
+                  data-bin={b.id}
+                  onClick={() => picked && put(b.id, picked)}
+                  sx={{
+                    bgcolor: hoverBin === b.id ? COLORS.blueSoft : "#fff",
+                    border: `2px ${active ? "dashed" : "solid"} ${active ? COLORS.blue : COLORS.border}`,
+                    borderRadius: 4,
+                    p: 2,
+                    minHeight: 160,
+                    [SHORT_SCREEN]: { p: 1.5, minHeight: 96, gap: 0.75 },
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1.25,
+                    cursor: picked ? "pointer" : "default",
+                  }}
+                >
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: "1.1rem" }}>{b.label}</Typography>
+                    {b.desc && (
+                      <Typography variant="body2" color="text.secondary">
+                        {b.desc}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                    {inBin.map((c) => (
+                      <Box
+                        key={c.id}
+                        className="pop"
+                        data-placed={c.id}
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          minHeight: 44,
+                          px: 1.75,
+                          borderRadius: 2.5,
+                          [SHORT_SCREEN]: { minHeight: 32, px: 1, fontSize: "0.92rem" },
+                          bgcolor: COLORS.blueSoft,
+                          color: COLORS.blue,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {c.label}
+                        <CheckRounded fontSize="small" />
+                      </Box>
+                    ))}
+                  </Box>
+                  {picked && (
+                    <Button
+                      variant="outlined"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        put(b.id, picked);
+                      }}
+                      sx={{ mt: "auto", borderStyle: "dashed", borderWidth: 2 }}
+                    >
+                      「{b.label}」に置く
+                    </Button>
+                  )}
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+
+        <Box component="aside" sx={{ minHeight: { xs: 96, md: 0 } }} aria-live="polite">
+          {!last && (
+            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", md: "block" } }}>
+              カードを置くと、ここに解説が出ます
+            </Typography>
+          )}
+          {last && lastCard && (
+            <Feedback
+              key={`${last.cardId}-${shake?.n ?? 0}-${Object.keys(placed).length}`}
+              correct={last.correct}
+              label={
+                last.correct ? `正解！「${lastCard.label}」` : `ちがう箱です。「${lastCard.label}」をもう一度考えよう`
+              }
+              explanation={
+                last.correct
+                  ? lastCard.explanation
+                  : "カードは元の場所に戻りました。それぞれの箱の説明を読んで、もう一度置いてみよう。"
+              }
+              refText={last.correct ? lastCard.ref : undefined}
+            />
+          )}
+        </Box>
       </Box>
 
       {dragging && drag && (

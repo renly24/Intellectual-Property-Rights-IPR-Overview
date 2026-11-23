@@ -20,6 +20,12 @@ export const COLORS = {
   orangeLine: "#F1D3BF",
 };
 
+/**
+ * 縦の短い横長画面（1,920×1,280 の端末を表示倍率150%で使うときや、iPad 横向きのブラウザ）。
+ * ここでは余白や行間を詰めて、スクロールせずに1画面に収める。sx のキーに使う。
+ */
+export const SHORT_SCREEN = "@media (max-height: 860px) and (min-width: 900px)";
+
 const theme = createTheme({
   palette: {
     primary: { main: COLORS.blue },
