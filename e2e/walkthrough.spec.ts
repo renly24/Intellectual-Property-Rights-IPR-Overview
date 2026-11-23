@@ -204,7 +204,7 @@ test("第1〜3章を最後まで解き、間違えた問題を復習できる", 
   await expect(page.getByRole("heading", { name: /著作権を学ぼう/ })).toBeVisible();
 
   // 第1章の最初のドラッグ仕分けで1枚、確認テストで1問、わざと間違える
-  const mistake = { chapter: 1, step: "phone", card: "game" };
+  const mistake = { chapter: 1, step: "snack", card: "song" };
   const quizMistake = { chapter: 1, step: "quiz", question: "brand" };
 
   for (const chapter of CHAPTERS) {
