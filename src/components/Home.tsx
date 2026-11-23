@@ -221,6 +221,25 @@ function ChapterCard({ meta, progress, current }: { meta: ChapterMeta; progress:
           第{meta.id}章{meta.ops ? `　${meta.ops}` : ""}
         </Typography>
         <Typography sx={{ fontSize: "1.05rem", fontWeight: 700 }}>{meta.title}</Typography>
+        {p?.passed && (
+          <Box
+            component="span"
+            data-passed={meta.id}
+            sx={{
+              display: "inline-block",
+              mt: 0.5,
+              px: 1,
+              py: 0.25,
+              borderRadius: 1.5,
+              bgcolor: COLORS.blueSoft,
+              color: COLORS.blue,
+              fontSize: "0.8rem",
+              fontWeight: 700,
+            }}
+          >
+            確認テスト 合格
+          </Box>
+        )}
       </Box>
       <Typography
         variant="body2"

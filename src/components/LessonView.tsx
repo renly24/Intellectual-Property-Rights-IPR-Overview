@@ -1,22 +1,34 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import HelpOutlineRounded from "@mui/icons-material/HelpOutlineRounded";
 import type { CheckBlock, LessonBlock, LessonStep } from "@/content/types";
+import { lessonPages } from "@/lib/steps";
 import { COLORS } from "@/theme";
-import { type ActivityProps, Feedback, useOnceWhen } from "./common";
+import { type ActivityProps, ChoiceButtons, Feedback, useOnceWhen } from "./common";
 import Rich from "./Rich";
 
-/** 解説。小問に答えるまで、その先の段落は表示しない */
-export default function LessonView({ step, onResult, onDone }: ActivityProps<LessonStep>) {
+/** 解説。1画面に1ページずつ出し、小問に答えたら画面下の「次へ」で次のページへ進む */
+export default function LessonView({ step, onResult, onDone, setNext }: ActivityProps<LessonStep>) {
+  const pages = useMemo(() => lessonPages(step.blocks), [step.blocks]);
+  const [page, setPage] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
 
-  // 最初の「まだ答えていない小問」までを表示する
-  const firstOpen = step.blocks.findIndex((b) => b.type === "check" && !(b.id in answers));
-  const visible = firstOpen === -1 ? step.blocks : step.blocks.slice(0, firstOpen + 1);
-  useOnceWhen(firstOpen === -1, onDone);
+  const blocks = pages[page];
+  const check = blocks.find((b): b is CheckBlock => b.type === "check");
+  const answered = !check || check.id in answers;
+  const isLast = page === pages.length - 1;
+  useOnceWhen(answered && isLast, onDone);
+
+  useEffect(() => {
+    if (!setNext) return;
+    setNext(answered && !isLast ? { hint: "続きを読もう", go: () => setPage((p) => p + 1) } : null);
+  }, [setNext, answered, isLast]);
+
+  useEffect(() => {
+    if (page > 0) window.scrollTo({ top: 0 });
+  }, [page]);
 
   const answer = (b: CheckBlock, i: number) => {
     if (b.id in answers) return;
@@ -25,18 +37,25 @@ export default function LessonView({ step, onResult, onDone }: ActivityProps<Les
   };
 
   return (
-    <Box component="article" sx={{ maxWidth: 760, mx: "auto", display: "flex", flexDirection: "column", gap: 2.5 }}>
-      <Typography component="h2" sx={{ fontSize: "1.35rem", fontWeight: 700 }}>
-        {step.title}
-      </Typography>
-      {visible.map((b, i) => (
+    <Box
+      component="article"
+      key={page}
+      data-page={page}
+      sx={{ maxWidth: 760, mx: "auto", display: "flex", flexDirection: "column", gap: 2.5 }}
+    >
+      <Box sx={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 2 }}>
+        <Typography component="h2" sx={{ fontSize: "1.35rem", fontWeight: 700 }}>
+          {step.title}
+        </Typography>
+        {pages.length > 1 && (
+          <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "nowrap" }}>
+            {page + 1} / {pages.length} ページ
+          </Typography>
+        )}
+      </Box>
+      {blocks.map((b, i) => (
         <Block key={i} block={b} chosen={b.type === "check" ? answers[b.id] : undefined} onChoose={answer} />
       ))}
-      {firstOpen !== -1 && (
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center" }}>
-          答えると続きが読めるようになります
-        </Typography>
-      )}
     </Box>
   );
 }
@@ -74,7 +93,6 @@ function Block({
       </Box>
     );
   }
-  const answered = chosen !== undefined;
   return (
     <Box
       component="section"
@@ -97,43 +115,20 @@ function Block({
         予想してみよう
       </Box>
       <Typography sx={{ fontSize: "1.15rem", fontWeight: 700, lineHeight: 1.7 }}>{block.question}</Typography>
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", sm: block.choices.length === 2 ? "1fr 1fr" : "1fr" },
-          gap: 1.5,
-        }}
-      >
-        {block.choices.map((c, i) => {
-          const isAnswer = i === block.answer;
-          const isChosen = i === chosen;
-          const color = !answered ? COLORS.ink : isAnswer ? COLORS.blue : isChosen ? COLORS.orange : COLORS.muted;
-          return (
-            <Button
-              key={i}
-              variant="outlined"
-              disabled={answered}
-              onClick={() => onChoose(block, i)}
-              sx={{
-                minHeight: 60,
-                borderRadius: 3,
-                borderWidth: 2,
-                justifyContent: "flex-start",
-                textAlign: "left",
-                fontSize: "1.02rem",
-                fontWeight: isChosen || (answered && isAnswer) ? 700 : 500,
-                color,
-                borderColor: answered && (isAnswer || isChosen) ? color : COLORS.border,
-                bgcolor: answered && isAnswer ? COLORS.blueSoft : answered && isChosen ? COLORS.orangeSoft : "#fff",
-                "&.Mui-disabled": { color, borderColor: answered && (isAnswer || isChosen) ? color : COLORS.line },
-              }}
-            >
-              {c}
-            </Button>
-          );
-        })}
-      </Box>
-      {answered && <Feedback correct={chosen === block.answer} explanation={block.explanation} refText={block.ref} />}
+      <ChoiceButtons
+        choices={block.choices}
+        answer={block.answer}
+        chosen={chosen ?? null}
+        onChoose={(i) => onChoose(block, i)}
+      />
+      {chosen !== undefined && (
+        <Feedback
+          correct={chosen === block.answer}
+          explanation={block.explanation}
+          refText={block.ref}
+          scrollIntoView
+        />
+      )}
     </Box>
   );
 }
