@@ -4,7 +4,7 @@ import type { ChoiceStep, LessonStep, QuizStep, SortStep, Step, SwipeStep, TapSt
 import { lessonPages } from "../src/lib/steps";
 
 /**
- * 第1〜3章を最初から最後まで、実際の操作（ドラッグ・スワイプ・タップ）で解き、
+ * 全章を最初から最後まで、実際の操作（ドラッグ・スワイプ・タップ）で解き、
  * まとめの正答率と、間違えた問題の復習まで確認する。
  *
  * デスクトップ（マウス）とタブレット（タッチ）の両方の projects で実行し、
@@ -222,7 +222,11 @@ function itemCount(steps: Step[]) {
   }, 0);
 }
 
-test("第1〜3章を最後まで解き、間違えた問題を復習できる", async ({ page }, info) => {
+/** 全章を最後まで解くテストは長い（タブレットの WebKit では1章あたり10秒以上かかる）ので、章の数に合わせて時間を延ばす */
+const WALKTHROUGH_TIMEOUT = 30_000 * CHAPTERS.length;
+
+test("全章を最後まで解き、間違えた問題を復習できる", async ({ page }, info) => {
+  test.setTimeout(WALKTHROUGH_TIMEOUT);
   const errors = trackPageErrors(page);
   await page.goto("./");
   await expect(page.getByRole("heading", { name: /著作権を学ぼう/ })).toBeVisible();
@@ -309,6 +313,7 @@ test("途中でページを閉じても、続きのステップから再開で�
 });
 
 test("どの画面も、授業で使う端末でスクロールせずに収まる", async ({ page }, info) => {
+  test.setTimeout(WALKTHROUGH_TIMEOUT);
   // デスクトップの project は 1,920×1,280 の端末（倍率150%）、タブレットの project は iPad 横向きの大きさで確かめる
   await page.setViewportSize(isTouch(info) ? { width: 1080, height: 740 } : { width: 1280, height: 740 });
   checkFit = true;
