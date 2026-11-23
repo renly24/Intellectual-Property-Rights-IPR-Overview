@@ -12,6 +12,8 @@ export type ChapterProgress = {
   /** 次に開くステップ（途中から再開するため） */
   step: number;
   completed: boolean;
+  /** 確認テストに合格したか（章を解き直しても消さない） */
+  passed?: boolean;
   results: Record<string, boolean>;
 };
 
@@ -121,9 +123,13 @@ export function completeChapter(chapterId: number) {
   updateChapter(chapterId, (c) => ({ ...c, completed: true }));
 }
 
-/** 章を最初から解き直す（正答率は新しく数え直す。復習リストは残す） */
+export function passQuiz(chapterId: number) {
+  updateChapter(chapterId, (c) => ({ ...c, passed: true }));
+}
+
+/** 章を最初から解き直す（正答率は新しく数え直す。復習リストと確認テストの合格は残す） */
 export function restartChapter(chapterId: number) {
-  updateChapter(chapterId, () => ({ step: 0, completed: false, results: {} }));
+  updateChapter(chapterId, (c) => ({ step: 0, completed: false, results: {}, passed: c.passed }));
 }
 
 export function resetAll() {

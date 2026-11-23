@@ -68,6 +68,9 @@ export default function SummaryView({ chapterId, step }: { chapterId: number; st
             <Typography color="text.secondary" sx={{ mt: 0.5 }}>
               {total}問中 {correct}問正解（最初の答えで計算）
             </Typography>
+            {progress.chapters[chapterId]?.passed && (
+              <Typography sx={{ mt: 0.75, color: COLORS.blue, fontWeight: 700 }}>確認テスト 合格</Typography>
+            )}
           </Box>
         </Box>
 

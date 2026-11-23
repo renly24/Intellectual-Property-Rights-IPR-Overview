@@ -1,5 +1,5 @@
 import { CHAPTERS } from "@/content";
-import type { CheckBlock, ChoiceStep, Step } from "@/content/types";
+import type { CheckBlock, ChoiceStep, LessonBlock, Step } from "@/content/types";
 import { chapterIdOfKey, itemKey } from "./progress";
 
 /** 画面に出す1ステップ。復習では複数の章のステップが混ざるので、章IDを添える */
@@ -16,6 +16,7 @@ export function itemIds(step: Step): string[] {
     case "tap":
       return step.segments.flatMap((s) => (typeof s === "string" ? [] : [s.id]));
     case "choice":
+    case "quiz":
       return step.questions.map((q) => q.id);
     case "summary":
       return [];
@@ -58,6 +59,11 @@ function onlyMissed(step: Step, missed: Set<string>): Step | null {
     case "choice": {
       const questions = step.questions.filter((q) => missed.has(q.id));
       return questions.length ? { ...step, questions } : null;
+    }
+    case "quiz": {
+      // 確認テストで最初に間違えた問題は、ふつうの選択問題として出し直す
+      const questions = step.questions.filter((q) => missed.has(q.id));
+      return questions.length ? { type: "choice", id: step.id, title: step.title, questions } : null;
     }
     case "summary":
       return null;
@@ -106,11 +112,31 @@ export function describeItem(key: string): { kind: string; title: string; explan
       const s = step.segments.find((x) => typeof x !== "string" && x.id === id);
       return s && typeof s !== "string" ? { kind: "文中タップ指摘", title: s.text, explanation: s.explanation } : null;
     }
-    case "choice": {
+    case "choice":
+    case "quiz": {
       const q = step.questions.find((x) => x.id === id);
-      return q ? { kind: "選択問題", title: q.question, explanation: q.explanation } : null;
+      const kind = step.type === "quiz" ? "確認テスト" : "選択問題";
+      return q ? { kind, title: q.question, explanation: q.explanation } : null;
     }
     default:
       return null;
   }
+}
+
+/**
+ * 小問ごとにページを分ける。1ページは「解説の段落 → 小問」で、最後の小問のあとに段落が残れば、それも1ページにする。
+ * 下へ伸びていく形にすると、見えている部分だけを読んで手が止まる生徒がいるため。
+ */
+export function lessonPages(blocks: LessonBlock[]): LessonBlock[][] {
+  const pages: LessonBlock[][] = [];
+  let page: LessonBlock[] = [];
+  for (const b of blocks) {
+    page.push(b);
+    if (b.type === "check") {
+      pages.push(page);
+      page = [];
+    }
+  }
+  if (page.length) pages.push(page);
+  return pages;
 }
