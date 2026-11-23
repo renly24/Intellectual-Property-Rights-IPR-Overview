@@ -86,6 +86,18 @@ export type ChoiceStep = {
   questions: ChoiceQuestion[];
 };
 
+/**
+ * 確認テスト（選択問題）。全問正解するまで、間違えた問題だけを選択肢の順番を変えて出し直す。
+ * 合格しないとまとめへ進めない。
+ */
+export type QuizStep = {
+  type: "quiz";
+  id: string;
+  title: string;
+  instruction?: string;
+  questions: ChoiceQuestion[];
+};
+
 /** まとめ（得点・ポイント・間違えた問題） */
 export type SummaryStep = {
   type: "summary";
@@ -94,7 +106,7 @@ export type SummaryStep = {
   points: string[];
 };
 
-export type ActivityStep = SortStep | SwipeStep | TapStep | ChoiceStep;
+export type ActivityStep = SortStep | SwipeStep | TapStep | ChoiceStep | QuizStep;
 export type Step = LessonStep | ActivityStep | SummaryStep;
 
 export type Chapter = {

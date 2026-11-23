@@ -7,11 +7,13 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import ChevronLeftRounded from "@mui/icons-material/ChevronLeftRounded";
 import type { Step } from "@/content/types";
-import { completeChapter, itemKey, recordResult, saveStep } from "@/lib/progress";
+import { completeChapter, itemKey, passQuiz, recordResult, saveStep } from "@/lib/progress";
 import type { PlayStep } from "@/lib/steps";
 import { COLORS } from "@/theme";
 import ChoiceView from "./ChoiceView";
+import type { NextAction } from "./common";
 import LessonView from "./LessonView";
+import QuizView from "./QuizView";
 import SortView from "./SortView";
 import SwipeView from "./SwipeView";
 import TapView from "./TapView";
@@ -35,6 +37,7 @@ const STEP_NAMES: Record<Step["type"], string> = {
   swipe: "スワイプ判定",
   tap: "文中タップ指摘",
   choice: "選択問題",
+  quiz: "確認テスト",
   summary: "まとめ",
 };
 
@@ -42,6 +45,8 @@ const STEP_NAMES: Record<Step["type"], string> = {
 export default function StepPlayer({ mode, label, title, steps, chapterId, initialStep = 0, renderSummary }: Props) {
   const [index, setIndex] = useState(Math.min(initialStep, steps.length - 1));
   const [done, setDone] = useState<Set<number>>(new Set());
+  // ステップの中のページ・問題を進めるときの「次へ」（各画面が渡す）
+  const [inner, setInner] = useState<NextAction | null>(null);
   const current = steps[index];
   const isSummary = current.step.type === "summary";
 
@@ -60,10 +65,20 @@ export default function StepPlayer({ mode, label, title, steps, chapterId, initi
       recordResult(itemKey(current.chapterId, current.step.id, itemId), correct, mode),
     [current, mode],
   );
-  const onDone = useCallback(() => setDone((d) => new Set(d).add(index)), [index]);
+  const stepType = current.step.type;
+  const onDone = useCallback(() => {
+    setDone((d) => new Set(d).add(index));
+    if (stepType === "quiz" && mode === "chapter" && chapterId !== undefined) passQuiz(chapterId);
+  }, [index, stepType, mode, chapterId]);
 
-  const canNext = done.has(index);
-  const view = renderStep(current.step, onResult, onDone, renderSummary);
+  const canNext = !!inner || done.has(index);
+  const moveTo = (i: number) => {
+    setInner(null);
+    setIndex(i);
+  };
+  const goNext = () => (inner ? inner.go() : moveTo(index + 1));
+  const hint = inner?.hint ?? (done.has(index) ? "できたら次へ進もう" : "問題に答えると次へ進めます");
+  const view = renderStep(current.step, { onResult, onDone, setNext: setInner }, label, renderSummary);
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
@@ -147,15 +162,19 @@ export default function StepPlayer({ mode, label, title, steps, chapterId, initi
           <Button
             variant="text"
             disabled={index === 0}
-            onClick={() => setIndex(index - 1)}
+            onClick={() => moveTo(index - 1)}
             sx={{ color: COLORS.muted, visibility: index === 0 ? "hidden" : "visible" }}
           >
             前へ
           </Button>
-          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
-            {canNext ? "できたら次へ進もう" : "問題を最後まで解くと次へ進めます"}
+          <Typography
+            variant="body2"
+            color={canNext ? "primary" : "text.secondary"}
+            sx={{ fontWeight: canNext ? 700 : 400, textAlign: "center" }}
+          >
+            {hint}
           </Typography>
-          <Button variant="contained" size="large" disabled={!canNext} onClick={() => setIndex(index + 1)}>
+          <Button variant="contained" size="large" disabled={!canNext} onClick={goNext} sx={{ flexShrink: 0 }}>
             次へ
           </Button>
         </Box>
@@ -166,21 +185,27 @@ export default function StepPlayer({ mode, label, title, steps, chapterId, initi
 
 function renderStep(
   step: Step,
-  onResult: (itemId: string, correct: boolean) => void,
-  onDone: () => void,
+  props: {
+    onResult: (itemId: string, correct: boolean) => void;
+    onDone: () => void;
+    setNext: (next: NextAction | null) => void;
+  },
+  label: string,
   renderSummary: (step: Step) => ReactNode,
 ) {
   switch (step.type) {
     case "lesson":
-      return <LessonView step={step} onResult={onResult} onDone={onDone} />;
+      return <LessonView step={step} {...props} />;
     case "sort":
-      return <SortView step={step} onResult={onResult} onDone={onDone} />;
+      return <SortView step={step} {...props} />;
     case "swipe":
-      return <SwipeView step={step} onResult={onResult} onDone={onDone} />;
+      return <SwipeView step={step} {...props} />;
     case "tap":
-      return <TapView step={step} onResult={onResult} onDone={onDone} />;
+      return <TapView step={step} {...props} />;
     case "choice":
-      return <ChoiceView step={step} onResult={onResult} onDone={onDone} />;
+      return <ChoiceView step={step} {...props} />;
+    case "quiz":
+      return <QuizView step={step} label={label} {...props} />;
     case "summary":
       return renderSummary(step);
   }

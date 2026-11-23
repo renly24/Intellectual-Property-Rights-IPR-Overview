@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { CHAPTERS } from "../src/content";
-import type { ChoiceStep, LessonStep, SortStep, Step, SwipeStep, TapStep } from "../src/content/types";
+import type { ChoiceStep, LessonStep, QuizStep, SortStep, Step, SwipeStep, TapStep } from "../src/content/types";
+import { lessonPages } from "../src/lib/steps";
 
 /**
  * 第1〜3章を最初から最後まで、実際の操作（ドラッグ・スワイプ・タップ）で解き、
@@ -53,12 +54,18 @@ async function center(locator: Locator) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
+/** 解説は小問ごとのページに分かれていて、小問に答えたら画面下の「次へ」で次のページへ進む */
 async function solveLesson(page: Page, step: LessonStep, info: TestInfo) {
-  for (const b of step.blocks) {
-    if (b.type !== "check") continue;
-    const section = page.locator(`[data-check="${b.id}"]`);
-    await press(section.getByRole("button", { name: b.choices[b.answer], exact: true }), info);
-    await expect(section.locator('[data-feedback="correct"]')).toBeVisible();
+  const pages = lessonPages(step.blocks);
+  for (const [i, blocks] of pages.entries()) {
+    await expect(page.locator(`[data-page="${i}"]`)).toBeVisible();
+    for (const b of blocks) {
+      if (b.type !== "check") continue;
+      const section = page.locator(`[data-check="${b.id}"]`);
+      await press(section.getByRole("button", { name: b.choices[b.answer], exact: true }), info);
+      await expect(section.locator('[data-feedback="correct"]')).toBeInViewport();
+    }
+    if (i < pages.length - 1) await goNext(page, info);
   }
 }
 
@@ -120,9 +127,37 @@ async function solveChoice(page: Page, step: ChoiceStep, info: TestInfo) {
   for (const [i, q] of step.questions.entries()) {
     const box = page.locator(`[data-question="${q.id}"]`);
     await press(box.getByRole("button", { name: q.choices[q.answer], exact: true }), info);
-    await expect(box.locator('[data-feedback="correct"]')).toBeVisible();
-    if (i < step.questions.length - 1) await press(page.getByRole("button", { name: "次の問題" }), info);
+    await expect(box.locator('[data-feedback="correct"]')).toBeInViewport();
+    if (i < step.questions.length - 1) await goNext(page, info);
   }
+}
+
+/**
+ * 確認テスト。選択肢の順番は毎回変わるので、文字で探して押す。
+ * mistake を渡すと、その問題を1回目にわざと間違え、間違えた問題だけの2回目で正解して合格する。
+ */
+async function solveQuiz(page: Page, step: QuizStep, info: TestInfo, mistake?: string) {
+  const answerOne = async (q: QuizStep["questions"][number], wrong: boolean) => {
+    const box = page.locator(`[data-question="${q.id}"]`);
+    const text = wrong ? q.choices.find((_, i) => i !== q.answer)! : q.choices[q.answer];
+    await press(box.getByRole("button", { name: text, exact: true }), info);
+    await expect(box.locator(`[data-feedback="${wrong ? "incorrect" : "correct"}"]`)).toBeInViewport();
+    await goNext(page, info);
+  };
+  for (const q of step.questions) await answerOne(q, q.id === mistake);
+  if (mistake) {
+    // 合格するまでまとめへは進めない
+    await expect(page.locator("[data-quiz-result]")).toBeVisible();
+    await expect(page.getByText("5問中 4問 正解")).toBeVisible();
+    await goNext(page, info);
+    await expect(page.getByText("第 1 問 / 全 1 問", { exact: false })).toBeVisible();
+    await answerOne(
+      step.questions.find((q) => q.id === mistake)!,
+      false,
+    );
+  }
+  await expect(page.locator("[data-quiz-passed]")).toBeVisible();
+  await expect(page.getByText("授業のプリントに「合格」と記録しよう")).toBeVisible();
 }
 
 async function solveStep(page: Page, step: Step, info: TestInfo, mistake?: string) {
@@ -137,6 +172,8 @@ async function solveStep(page: Page, step: Step, info: TestInfo, mistake?: strin
       return solveTap(page, step, info);
     case "choice":
       return solveChoice(page, step, info);
+    case "quiz":
+      return solveQuiz(page, step, info, mistake);
     case "summary":
       return;
   }
@@ -153,6 +190,7 @@ function itemCount(steps: Step[]) {
       case "tap":
         return n + s.segments.filter((x) => typeof x !== "string").length;
       case "choice":
+      case "quiz":
         return n + s.questions.length;
       default:
         return n;
@@ -165,26 +203,36 @@ test("第1〜3章を最後まで解き、間違えた問題を復習できる", 
   await page.goto("./");
   await expect(page.getByRole("heading", { name: /著作権を学ぼう/ })).toBeVisible();
 
-  // 第1章の最初のドラッグ仕分けで、1枚だけわざと間違える
-  const mistake = { chapter: 1, step: "snack", card: "song" };
+  // 第1章の最初のドラッグ仕分けで1枚、確認テストで1問、わざと間違える
+  const mistake = { chapter: 1, step: "phone", card: "game" };
+  const quizMistake = { chapter: 1, step: "quiz", question: "brand" };
 
   for (const chapter of CHAPTERS) {
     if (chapter.id === 1) await press(page.getByRole("link", { name: "はじめる" }), info);
     await expect(page.getByRole("heading", { name: chapter.title, level: 1 })).toBeVisible();
 
     for (const [i, step] of chapter.steps.entries()) {
-      const m = chapter.id === mistake.chapter && step.id === mistake.step ? mistake.card : undefined;
+      const m =
+        chapter.id === mistake.chapter && step.id === mistake.step
+          ? mistake.card
+          : chapter.id === quizMistake.chapter && step.id === quizMistake.step
+            ? quizMistake.question
+            : undefined;
       await solveStep(page, step, info, m);
       if (i < chapter.steps.length - 1) await goNext(page, info);
     }
 
     // まとめ：正答率（最初の答えで計算）
     const total = itemCount(chapter.steps);
-    const correct = chapter.id === mistake.chapter ? total - 1 : total;
+    const correct = chapter.id === mistake.chapter ? total - 2 : total;
     await expect(page.locator(`[data-score="${Math.round((correct / total) * 100)}"]`)).toBeVisible();
     if (chapter.id === mistake.chapter) {
       await expect(page.locator(`[data-mistake="${mistake.chapter}/${mistake.step}/${mistake.card}"]`)).toBeVisible();
+      await expect(
+        page.locator(`[data-mistake="${quizMistake.chapter}/${quizMistake.step}/${quizMistake.question}"]`),
+      ).toBeVisible();
     }
+    await expect(page.getByText("確認テスト 合格")).toBeVisible();
 
     const nextChapter = CHAPTERS.find((c) => c.id === chapter.id + 1);
     await press(
@@ -193,14 +241,28 @@ test("第1〜3章を最後まで解き、間違えた問題を復習できる", 
     );
   }
 
-  // 章一覧：3章とも完了、復習が1問
+  // 章一覧：3章とも確認テストに合格、復習が2問
   await expect(page.getByRole("heading", { name: /著作権を学ぼう/ })).toBeVisible();
-  await press(page.getByRole("link", { name: "復習する（1問）" }), info);
+  for (const chapter of CHAPTERS) await expect(page.locator(`[data-passed="${chapter.id}"]`)).toBeVisible();
+  await press(page.getByRole("link", { name: "復習する（2問）" }), info);
 
   // 復習：間違えたカードだけが出る
   const sortStep = CHAPTERS[0].steps.find((s) => s.id === mistake.step) as SortStep;
   await expect(page.locator("[data-card]")).toHaveCount(1);
   await solveSort(page, { ...sortStep, cards: sortStep.cards.filter((c) => c.id === mistake.card) }, info);
+  await goNext(page, info);
+  // 確認テストで間違えた問題は、選択問題として出し直される
+  const quizStep = CHAPTERS[0].steps.find((s) => s.id === quizMistake.step) as QuizStep;
+  await solveChoice(
+    page,
+    {
+      type: "choice",
+      id: "quiz",
+      title: "",
+      questions: quizStep.questions.filter((q) => q.id === quizMistake.question),
+    },
+    info,
+  );
   await goNext(page, info);
   await expect(page.getByText("復習完了！全部正解できました")).toBeVisible();
 
