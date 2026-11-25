@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import ArrowBackRounded from "@mui/icons-material/ArrowBackRounded";
 import ArrowForwardRounded from "@mui/icons-material/ArrowForwardRounded";
 import type { SwipeStep } from "@/content/types";
-import { COLORS } from "@/theme";
+import { COLORS, SHORT_SCREEN } from "@/theme";
 import { ActivityHeader, type ActivityProps, Feedback, useOnceWhen } from "./common";
 
 /** これ以上横に動かして離したら判定する（px） */
@@ -74,10 +74,27 @@ export default function SwipeView({ step, onResult, onDone }: ActivityProps<Swip
         sub={`${Math.min(index + 1, step.cards.length)} / ${step.cards.length} 枚　・　下のボタンでも答えられます`}
       />
       <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: 3 }}>
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2.5 }}>
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2.5,
+            [SHORT_SCREEN]: { gap: 1.5 },
+          }}
+        >
           <Box sx={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
             <SideLabel side="left" label={step.left} active={lean === "left"} />
-            <Box sx={{ position: "relative", width: "min(360px, 100%)", height: 300, flexShrink: 1 }}>
+            <Box
+              sx={{
+                position: "relative",
+                width: "min(360px, 100%)",
+                height: 300,
+                flexShrink: 1,
+                [SHORT_SCREEN]: { height: 250 },
+              }}
+            >
               {!finished && index + 1 < step.cards.length && (
                 <Box
                   aria-hidden
@@ -110,6 +127,7 @@ export default function SwipeView({ step, onResult, onDone }: ActivityProps<Swip
                     border: `2px solid ${lean === "right" ? COLORS.blue : lean === "left" ? COLORS.orange : COLORS.border}`,
                     boxShadow: "0 12px 28px rgba(28,36,51,0.14)",
                     p: 3.5,
+                    [SHORT_SCREEN]: { p: 2.5 },
                     display: "flex",
                     flexDirection: "column",
                     gap: 2,
@@ -218,17 +236,29 @@ export default function SwipeView({ step, onResult, onDone }: ActivityProps<Swip
           )}
           {history.length > 0 && (
             <Box sx={{ bgcolor: "#fff", border: `1px solid ${COLORS.line}`, borderRadius: 3, p: 2 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                これまでの結果（✓正解　✗不正解）
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                これまでの結果（○正解　×不正解）
               </Typography>
-              {history.map((h) => (
-                <Typography key={h.id} variant="body2" sx={{ lineHeight: 1.9 }}>
-                  <span style={{ color: h.correct ? COLORS.blue : COLORS.orange, fontWeight: 700 }}>
-                    {h.correct ? "✓" : "✗"}
-                  </span>{" "}
-                  {step.cards.find((c) => c.id === h.id)?.text}
-                </Typography>
-              ))}
+              {/* 画面に収まるよう、カードの番号と正誤だけを並べる */}
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                {history.map((h, i) => (
+                  <Box
+                    key={h.id}
+                    title={step.cards.find((c) => c.id === h.id)?.text}
+                    sx={{
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: 2,
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      color: h.correct ? COLORS.blue : COLORS.orange,
+                      bgcolor: h.correct ? COLORS.blueSoft : COLORS.orangeSoft,
+                    }}
+                  >
+                    {i + 1} {h.correct ? "○" : "×"}
+                  </Box>
+                ))}
+              </Box>
             </Box>
           )}
         </Box>

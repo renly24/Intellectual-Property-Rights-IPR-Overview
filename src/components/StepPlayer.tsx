@@ -9,7 +9,7 @@ import ChevronLeftRounded from "@mui/icons-material/ChevronLeftRounded";
 import type { Step } from "@/content/types";
 import { completeChapter, itemKey, passQuiz, recordResult, saveStep } from "@/lib/progress";
 import type { PlayStep } from "@/lib/steps";
-import { COLORS } from "@/theme";
+import { COLORS, SHORT_SCREEN } from "@/theme";
 import ChoiceView from "./ChoiceView";
 import type { NextAction } from "./common";
 import LessonView from "./LessonView";
@@ -92,6 +92,7 @@ export default function StepPlayer({ mode, label, title, steps, chapterId, initi
           borderBottom: `1px solid ${COLORS.line}`,
           px: { xs: 2, sm: 4 },
           py: 1.25,
+          [SHORT_SCREEN]: { py: 0.5 },
           display: "flex",
           alignItems: "center",
           gap: 2,
@@ -138,7 +139,15 @@ export default function StepPlayer({ mode, label, title, steps, chapterId, initi
       <Box
         component="main"
         key={index}
-        sx={{ flex: 1, width: "100%", maxWidth: 1180, mx: "auto", px: { xs: 2, sm: 4 }, py: { xs: 3, sm: 4 } }}
+        sx={{
+          flex: 1,
+          width: "100%",
+          maxWidth: 1180,
+          mx: "auto",
+          px: { xs: 2, sm: 4 },
+          py: { xs: 3, sm: 4 },
+          [SHORT_SCREEN]: { py: 2 },
+        }}
       >
         {view}
       </Box>
@@ -153,6 +162,7 @@ export default function StepPlayer({ mode, label, title, steps, chapterId, initi
             borderTop: `1px solid ${COLORS.line}`,
             px: { xs: 2, sm: 4 },
             py: 1.5,
+            [SHORT_SCREEN]: { py: 0.75 },
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",

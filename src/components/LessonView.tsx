@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import HelpOutlineRounded from "@mui/icons-material/HelpOutlineRounded";
 import type { CheckBlock, LessonBlock, LessonStep } from "@/content/types";
 import { lessonPages } from "@/lib/steps";
-import { COLORS } from "@/theme";
+import { COLORS, SHORT_SCREEN } from "@/theme";
 import { type ActivityProps, ChoiceButtons, Feedback, useOnceWhen } from "./common";
 import Rich from "./Rich";
 
@@ -36,12 +36,26 @@ export default function LessonView({ step, onResult, onDone, setNext }: Activity
     onResult(b.id, i === b.answer);
   };
 
+  const reading = blocks.filter((b) => b.type !== "check");
+  // 横長の画面では、左に解説・右に小問を並べて、1画面に収める
+  const twoColumns = !!check && reading.length > 0;
+  const renderBlock = (b: LessonBlock, i: number) => (
+    <Block key={i} block={b} chosen={b.type === "check" ? answers[b.id] : undefined} onChoose={answer} />
+  );
+
   return (
     <Box
       component="article"
       key={page}
       data-page={page}
-      sx={{ maxWidth: 760, mx: "auto", display: "flex", flexDirection: "column", gap: 2.5 }}
+      sx={{
+        maxWidth: twoColumns ? 1120 : 760,
+        mx: "auto",
+        display: "flex",
+        flexDirection: "column",
+        gap: 2.5,
+        [SHORT_SCREEN]: { gap: 1.5 },
+      }}
     >
       <Box sx={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 2 }}>
         <Typography component="h2" sx={{ fontSize: "1.35rem", fontWeight: 700 }}>
@@ -53,9 +67,23 @@ export default function LessonView({ step, onResult, onDone, setNext }: Activity
           </Typography>
         )}
       </Box>
-      {blocks.map((b, i) => (
-        <Block key={i} block={b} chosen={b.type === "check" ? answers[b.id] : undefined} onChoose={answer} />
-      ))}
+      {twoColumns ? (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) minmax(0, 1fr)" },
+            gap: { xs: 2.5, md: 3 },
+            alignItems: "start",
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, [SHORT_SCREEN]: { gap: 1.5 } }}>
+            {reading.map(renderBlock)}
+          </Box>
+          {renderBlock(check, blocks.indexOf(check))}
+        </Box>
+      ) : (
+        blocks.map(renderBlock)
+      )}
     </Box>
   );
 }
@@ -71,7 +99,10 @@ function Block({
 }) {
   if (block.type === "p") {
     return (
-      <Typography className="reveal" sx={{ fontSize: "1.1rem", lineHeight: 2 }}>
+      <Typography
+        className="reveal"
+        sx={{ fontSize: "1.1rem", lineHeight: 2, [SHORT_SCREEN]: { fontSize: "1.05rem", lineHeight: 1.8 } }}
+      >
         <Rich text={block.text} />
       </Typography>
     );
@@ -80,7 +111,13 @@ function Block({
     return (
       <Box
         className="reveal"
-        sx={{ bgcolor: "#fff", border: `1px solid ${COLORS.line}`, borderRadius: 3, p: { xs: 2, sm: 2.5 } }}
+        sx={{
+          bgcolor: "#fff",
+          border: `1px solid ${COLORS.line}`,
+          borderRadius: 3,
+          p: { xs: 2, sm: 2.5 },
+          [SHORT_SCREEN]: { p: 2, "& li": { lineHeight: 1.65 }, "& ul": { gap: 0.25 } },
+        }}
       >
         {block.title && <Typography sx={{ fontWeight: 700, mb: 1 }}>{block.title}</Typography>}
         <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.75 }}>
