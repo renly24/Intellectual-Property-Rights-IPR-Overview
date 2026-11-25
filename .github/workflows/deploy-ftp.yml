@@ -47,9 +47,9 @@ jobs:
       max-parallel: 1
       matrix:
         include:
-          - course: copyright # 知的財産系（第1〜5章）
+          - course: copyright # 知的財産系（知的財産権・プライバシー権と個人情報）
             dir: edu-copyright
-          - course: cyber # サイバー犯罪系（個人情報・サイバー犯罪・マルウェア）
+          - course: cyber # サイバー犯罪系（サイバー犯罪・マルウェア）
             dir: edu-cyber
     env:
       # ビルドする教材（src/content/index.ts の COURSES）
