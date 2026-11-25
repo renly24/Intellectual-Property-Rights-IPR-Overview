@@ -4,9 +4,9 @@ import copyright2 from "./copyright/chapter2.json";
 import copyright3 from "./copyright/chapter3.json";
 import copyright4 from "./copyright/chapter4.json";
 import copyright5 from "./copyright/chapter5.json";
+import copyright6 from "./copyright/chapter6.json";
 import cyber1 from "./cyber/chapter1.json";
 import cyber2 from "./cyber/chapter2.json";
-import cyber3 from "./cyber/chapter3.json";
 
 /**
  * 教材（コース）。1つのリポジトリから、知的財産系とサイバー犯罪系の2つの教材を別々に書き出す。
@@ -38,21 +38,22 @@ export const COURSES: Record<CourseId, Course> = {
     title: "著作権を学ぼう",
     tagline: "情報Ⅰ・共通テスト対策",
     description:
-      "高校「情報Ⅰ」・共通テスト対策。著作権を中心に知的財産権を、ドラッグ・スワイプ・タップで手を動かしながら学ぶ教育用アプリ",
+      "高校「情報Ⅰ」・共通テスト対策。著作権を中心とした知的財産権と、プライバシー権・個人情報を、ドラッグ・スワイプ・タップで手を動かしながら学ぶ教育用アプリ",
     mark: "copyright",
     storageKey: "edu-copyright-progress-v1",
-    chapters: [copyright1, copyright2, copyright3, copyright4, copyright5] as Chapter[],
-    planned: [{ id: 6, title: "総合演習（共通テスト形式）" }],
+    chapters: [copyright1, copyright2, copyright3, copyright4, copyright5, copyright6] as Chapter[],
+    planned: [{ id: 7, title: "総合演習（共通テスト形式）" }],
   },
   cyber: {
     id: "cyber",
-    title: "個人情報とサイバー犯罪を学ぼう",
+    title: "サイバー犯罪とマルウェアを学ぼう",
     tagline: "情報Ⅰ・共通テスト対策",
     description:
-      "高校「情報Ⅰ」・共通テスト対策。個人情報の保護、サイバー犯罪、マルウェアと身の守り方を、ドラッグ・スワイプ・タップで手を動かしながら学ぶ教育用アプリ",
+      "高校「情報Ⅰ」・共通テスト対策。サイバー犯罪の種類と法律、マルウェアと身の守り方を、ドラッグ・スワイプ・タップで手を動かしながら学ぶ教育用アプリ",
     mark: "lock",
-    storageKey: "edu-cyber-progress-v1",
-    chapters: [cyber1, cyber2, cyber3] as Chapter[],
+    // 章の並びを変えたので v2 にする（v1 の記録は別の章の記録になってしまうため使わない）
+    storageKey: "edu-cyber-progress-v2",
+    chapters: [cyber1, cyber2] as Chapter[],
     planned: [],
   },
 };

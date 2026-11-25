@@ -37,7 +37,7 @@ function load(): Progress {
     if (!raw) return EMPTY;
     const data = JSON.parse(raw) as Progress;
     if (data?.v !== 1 || typeof data.chapters !== "object" || !Array.isArray(data.mistakes)) return EMPTY;
-    // 教材から外れた章（例：サイバー犯罪系を別の教材に分ける前の第6〜8章）の間違いは、復習に出せないので数えない
+    // 教材から外れた章（例：サイバー犯罪系を別の教材に分ける前の第7・8章）の間違いは、復習に出せないので数えない
     const ids = new Set(COURSE.chapters.map((c) => c.id));
     return { ...data, mistakes: data.mistakes.filter((k) => ids.has(chapterIdOfKey(k))) };
   } catch {
