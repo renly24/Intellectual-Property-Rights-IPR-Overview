@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
-import { CHAPTERS } from "../src/content";
+import { CHAPTERS, COURSE } from "../src/content";
 import type { ChoiceStep, LessonStep, QuizStep, SortStep, Step, SwipeStep, TapStep } from "../src/content/types";
 import { lessonPages } from "../src/lib/steps";
 
@@ -229,11 +229,14 @@ test("全章を最後まで解き、間違えた問題を復習できる", async
   test.setTimeout(WALKTHROUGH_TIMEOUT);
   const errors = trackPageErrors(page);
   await page.goto("./");
-  await expect(page.getByRole("heading", { name: /著作権を学ぼう/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: COURSE.title })).toBeVisible();
 
   // 第1章の最初のドラッグ仕分けで1枚、確認テストで1問、わざと間違える
-  const mistake = { chapter: 1, step: "snack", card: "song" };
-  const quizMistake = { chapter: 1, step: "quiz", question: "brand" };
+  // （テストする教材は、ビルドと同じ環境変数 NEXT_PUBLIC_COURSE で決まる）
+  const firstSort = CHAPTERS[0].steps.find((s): s is SortStep => s.type === "sort")!;
+  const firstQuiz = CHAPTERS[0].steps.find((s): s is QuizStep => s.type === "quiz")!;
+  const mistake = { chapter: 1, step: firstSort.id, card: firstSort.cards[1].id };
+  const quizMistake = { chapter: 1, step: firstQuiz.id, question: firstQuiz.questions[1].id };
 
   for (const chapter of CHAPTERS) {
     if (chapter.id === 1) await press(page.getByRole("link", { name: "はじめる" }), info);
@@ -270,7 +273,7 @@ test("全章を最後まで解き、間違えた問題を復習できる", async
   }
 
   // 章一覧：3章とも確認テストに合格、復習が2問
-  await expect(page.getByRole("heading", { name: /著作権を学ぼう/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: COURSE.title })).toBeVisible();
   for (const chapter of CHAPTERS) await expect(page.locator(`[data-passed="${chapter.id}"]`)).toBeVisible();
   await press(page.getByRole("link", { name: "復習する（2問）" }), info);
 
@@ -301,15 +304,16 @@ test("全章を最後まで解き、間違えた問題を復習できる", async
 });
 
 test("途中でページを閉じても、続きのステップから再開できる", async ({ page }, info) => {
+  const secondStep = CHAPTERS[0].steps[1].title;
   await page.goto("./chapter/1/");
   await solveLesson(page, CHAPTERS[0].steps[0] as LessonStep, info);
   await goNext(page, info);
-  await expect(page.getByText("新しいお菓子と知的財産権")).toBeVisible();
+  await expect(page.getByText(secondStep, { exact: true }).first()).toBeVisible();
 
   await page.goto("./");
   await expect(page.getByText("つづきから")).toBeVisible();
   await press(page.getByRole("link", { name: "再開する" }), info);
-  await expect(page.getByText("新しいお菓子と知的財産権")).toBeVisible();
+  await expect(page.getByText(secondStep, { exact: true }).first()).toBeVisible();
 });
 
 test("どの画面も、授業で使う端末でスクロールせずに収まる", async ({ page }, info) => {

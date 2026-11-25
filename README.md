@@ -2,12 +2,18 @@
 
 高校「情報Ⅰ」の大学入学共通テスト対策として、著作権を中心に知的財産権を学ぶ教育用の Web アプリです。解説を読むだけで終わらせず、ドラッグ・スワイプ・タップで手を動かしながら理解します。授業中にタブレット（1人1台端末）で使う想定です。
 
-- GitHub Pages: https://renly24.github.io/Intellectual-Property-Rights-IPR-Overview/
-- FTP サーバー: http://e.gmobb.jp/omaesensei/digital/edu-copyright/
+1つのリポジトリから、**2つの教材を別々に書き出して、別のフォルダーに公開**します。どちらを書き出すかは、ビルドのときの環境変数 `NEXT_PUBLIC_COURSE` で選びます。学習の記録も教材ごとに別に保存します。
+
+| 教材 | `NEXT_PUBLIC_COURSE` | FTP サーバー | GitHub Pages |
+| --- | --- | --- | --- |
+| 著作権を学ぼう（知的財産系） | `copyright`（省略時） | http://e.gmobb.jp/omaesensei/digital/edu-copyright/ | https://renly24.github.io/Intellectual-Property-Rights-IPR-Overview/edu-copyright/ |
+| 個人情報とサイバー犯罪を学ぼう（サイバー犯罪系） | `cyber` | http://e.gmobb.jp/omaesensei/digital/edu-cyber/ | https://renly24.github.io/Intellectual-Property-Rights-IPR-Overview/edu-cyber/ |
 
 ## 学べること
 
-全9章（1章 約10〜15分）。共通テスト（情報Ⅰ）で問われる、知的財産権・個人情報・サイバー犯罪を扱います。現在は第1〜8章が公開中です（第9章の総合演習は準備中）。
+1章 約10〜15分。共通テスト（情報Ⅰ）で問われる、知的財産権・個人情報・サイバー犯罪を扱います。
+
+### 著作権を学ぼう（知的財産系）
 
 | 章 | 内容 | 主な操作 |
 | --- | --- | --- |
@@ -16,10 +22,15 @@
 | 3. 著作者の権利 | 著作者人格権（公表権・氏名表示権・同一性保持権）と著作財産権 | ドラッグ仕分け・選択 |
 | 4. 著作隣接権・保護期間・クリエイティブ・コモンズ | 著作隣接権、保護期間、CCライセンス | ドラッグ仕分け・選択・スワイプ判定 |
 | 5. 許諾なく使える場合 | 私的使用・引用・教育機関での複製・非営利の上演、SNS・動画投稿の事例 | スワイプ判定・文中タップ |
-| 6. プライバシー権と個人情報 | プライバシー権・肖像権、個人情報保護法、OECD8原則 | ドラッグ仕分け・選択 |
-| 7. サイバー犯罪の種類と法律 | サイバー犯罪の3分類、不正アクセス禁止法、不正アクセスの手口 | ドラッグ仕分け・スワイプ判定 |
-| 8. マルウェアと身の守り方 | ウイルス・ワーム・トロイの木馬・ランサムウェアなど、被害にあわないための対策 | ドラッグ仕分け・選択・文中タップ |
-| 9. 総合演習（共通テスト形式） | 第1〜8章の範囲の会話文・資料問題 | 準備中 |
+| 6. 総合演習（共通テスト形式） | 会話文・資料問題 | 準備中 |
+
+### 個人情報とサイバー犯罪を学ぼう（サイバー犯罪系）
+
+| 章 | 内容 | 主な操作 |
+| --- | --- | --- |
+| 1. プライバシー権と個人情報 | プライバシー権・肖像権、個人情報保護法、OECD8原則 | ドラッグ仕分け・選択 |
+| 2. サイバー犯罪の種類と法律 | サイバー犯罪の3分類、不正アクセス禁止法、不正アクセスの手口 | ドラッグ仕分け・スワイプ判定 |
+| 3. マルウェアと身の守り方 | ウイルス・ワーム・トロイの木馬・ランサムウェアなど、被害にあわないための対策 | ドラッグ仕分け・選択・文中タップ |
 
 ### 1章の流れ
 
@@ -44,19 +55,21 @@
 
 ## 教材の追加・修正
 
-章の中身は `src/content/chapters/chapter*.json` にあります（型は `src/content/types.ts`）。文章中の `**語句**` は重要語として色付きの太字になります。新しい章は JSON を作って `src/content/index.ts` の `CHAPTERS` に追加します。
+章の中身は、知的財産系が `src/content/copyright/chapter*.json`、サイバー犯罪系が `src/content/cyber/chapter*.json` にあります（型は `src/content/types.ts`）。文章中の `**語句**` は重要語として色付きの太字になります。新しい章は JSON を作って `src/content/index.ts` の `COURSES` の `chapters` に追加します。教材のタイトルや「準備中」の章もここで決めます。
 
 ## 開発
 
 ```bash
 npm ci
-npm run dev        # http://localhost:3000
+npm run dev        # http://localhost:3000（知的財産系）
 npm run lint
 npm run typecheck
-npm run build      # out/ に静的ファイルを出力
+npm run build      # out/ に静的ファイルを出力（知的財産系）
 npx playwright install chromium webkit
 npm run test:e2e   # ビルド済みの out/ を、デスクトップ（マウス）と iPad（タッチ）で通しで操作する
 ```
+
+サイバー犯罪系は、どのコマンドの前にも `NEXT_PUBLIC_COURSE=cyber` を付けます（例：`NEXT_PUBLIC_COURSE=cyber npm run build && NEXT_PUBLIC_COURSE=cyber npm run test:e2e`）。テストはビルドと同じ教材を選ぶ必要があります。
 
 技術構成：Next.js 16（静的エクスポート）、React 19、TypeScript、MUI v7、Playwright
 
@@ -64,9 +77,9 @@ npm run test:e2e   # ビルド済みの out/ を、デスクトップ（マウ�
 
 | ワークフロー | タイミング | 内容 |
 | --- | --- | --- |
-| `e2e.yml` | PR、`main` への push | Lint・型チェック・ビルド・E2E テスト |
-| `deploy.yml` | `main` への push | GitHub Pages へ公開（Settings → Pages で Source を「GitHub Actions」にしておく） |
-| `deploy-ftp.yml` | `main` への push | FTP サーバーの `digital/edu-copyright/` へ公開（手順は共通ワークフロー [`renly24/edu-deploy-workflows`](https://github.com/renly24/edu-deploy-workflows) と同じ。共通側のサーバー証明書の指紋が古いため、このリポジトリに直接書いている） |
+| `e2e.yml` | PR、`main` への push | 教材ごとに Lint・型チェック・ビルド・E2E テスト |
+| `deploy.yml` | `main` への push | 2つの教材を GitHub Pages の `edu-copyright/`・`edu-cyber/` へ公開し、入り口のページから両方にリンクする（Settings → Pages で Source を「GitHub Actions」にしておく） |
+| `deploy-ftp.yml` | `main` への push | 知的財産系を FTP サーバーの `digital/edu-copyright/` へ、サイバー犯罪系を `digital/edu-cyber/` へ公開（手順は共通ワークフロー [`renly24/edu-deploy-workflows`](https://github.com/renly24/edu-deploy-workflows) と同じ。共通側のサーバー証明書の指紋が古いため、このリポジトリに直接書いている） |
 
 FTP へのアップロードには、リポジトリの Settings → Secrets and variables → Actions に `FTP_HOST`・`FTP_USER`・`FTP_PASS` の3つを登録しておく必要があります（`edu-deploy-workflows` の「Sync FTP secrets」でコピーできます）。
 

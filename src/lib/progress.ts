@@ -1,5 +1,6 @@
 "use client";
 import { useSyncExternalStore } from "react";
+import { COURSE } from "@/content";
 
 /**
  * 学習の記録。ブラウザの localStorage にだけ保存する（サーバーには送らない）。
@@ -23,7 +24,8 @@ export type Progress = {
   mistakes: string[];
 };
 
-const STORAGE_KEY = "edu-copyright-progress-v1";
+// 教材ごとに別のキーにする（同じサーバーに2つの教材を置いても記録が混ざらない）
+const STORAGE_KEY = COURSE.storageKey;
 const EMPTY: Progress = { v: 1, chapters: {}, mistakes: [] };
 
 let cache: Progress | null = null;
@@ -35,7 +37,9 @@ function load(): Progress {
     if (!raw) return EMPTY;
     const data = JSON.parse(raw) as Progress;
     if (data?.v !== 1 || typeof data.chapters !== "object" || !Array.isArray(data.mistakes)) return EMPTY;
-    return data;
+    // 教材から外れた章（例：サイバー犯罪系を別の教材に分ける前の第6〜8章）の間違いは、復習に出せないので数えない
+    const ids = new Set(COURSE.chapters.map((c) => c.id));
+    return { ...data, mistakes: data.mistakes.filter((k) => ids.has(chapterIdOfKey(k))) };
   } catch {
     // プライベートブラウズなどで読めないときは、記録なしで動かす
     return EMPTY;

@@ -10,7 +10,8 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Typography from "@mui/material/Typography";
 import CheckRounded from "@mui/icons-material/CheckRounded";
-import { CHAPTER_LIST, getChapter } from "@/content";
+import LockRounded from "@mui/icons-material/LockRounded";
+import { CHAPTER_LIST, COURSE, getChapter } from "@/content";
 import type { ChapterMeta } from "@/content/types";
 import { type Progress, resetAll, scoreOf, useProgress } from "@/lib/progress";
 import { countItems } from "@/lib/steps";
@@ -53,12 +54,12 @@ export default function Home() {
               justifyContent: "center",
             }}
           >
-            ©
+            {COURSE.mark === "lock" ? <LockRounded fontSize="small" /> : "©"}
           </Box>
           <Typography component="h1" sx={{ fontSize: "1.25rem", fontWeight: 700 }}>
-            著作権を学ぼう{" "}
+            {COURSE.title}{" "}
             <Box component="span" sx={{ fontSize: "0.85rem", fontWeight: 500, color: "text.secondary" }}>
-              情報Ⅰ・共通テスト対策
+              {COURSE.tagline}
             </Box>
           </Typography>
         </Box>

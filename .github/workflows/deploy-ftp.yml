@@ -1,7 +1,11 @@
 name: Deploy to FTP server
 
-# main へ push すると、ビルドして FTP サーバーの digital/edu-copyright/ にアップロードする。
-# 公開 URL: http://e.gmobb.jp/omaesensei/digital/edu-copyright/
+# main へ push すると、2つの教材を別々にビルドして、FTP サーバーの別のフォルダーにアップロードする。
+#   知的財産系（NEXT_PUBLIC_COURSE=copyright）→ digital/edu-copyright/
+#     公開 URL: http://e.gmobb.jp/omaesensei/digital/edu-copyright/
+#   サイバー犯罪系（NEXT_PUBLIC_COURSE=cyber）→ digital/edu-cyber/
+#     公開 URL: http://e.gmobb.jp/omaesensei/digital/edu-cyber/
+# 教材を増やすときは、下の matrix に1行足す。
 #
 # 手順は共通ワークフロー renly24/edu-deploy-workflows の ftp-deploy.yml と同じ。
 # 共通ワークフローのサーバー証明書の指紋が古く接続できないため、このリポジトリに直接書いている。
@@ -12,6 +16,7 @@ name: Deploy to FTP server
 #       secrets: inherit
 #       with:
 #         project-dir: edu-copyright
+# （そのときは教材ごとに呼び出しを分け、ビルドの環境変数 NEXT_PUBLIC_COURSE を渡せるようにする）
 on:
   push:
     branches: [main]
@@ -27,17 +32,32 @@ concurrency:
 env:
   # FTP のログイン直後のフォルダーは http://e.gmobb.jp/omaesensei/ として公開される
   PUBLIC_ORIGIN: http://e.gmobb.jp
-  # FTP サーバー上のアップロード先（ログイン直後のフォルダーからの相対パス）
-  REMOTE_DIR: digital/edu-copyright
-  # 公開 URL のパス部分
-  BASE_PATH: /omaesensei/digital/edu-copyright
   # サーバー証明書は発行元が不明なため、この証明書（SHA-1 指紋）だけを信頼する。
   # サーバーの証明書が更新されたら、ここを新しい指紋に書き換える。
   FTP_CERT_FINGERPRINT: "B1:F9:00:DB:E4:84:0B:B8:7B:28:0E:1D:29:A4:ED:FF:E6:4B:BE:B6"
 
 jobs:
   deploy:
+    name: deploy (${{ matrix.dir }})
     runs-on: ubuntu-latest
+    strategy:
+      # 片方が失敗しても、もう片方は公開する
+      fail-fast: false
+      # FTP サーバーへの同時接続を増やさないよう、1つずつアップロードする
+      max-parallel: 1
+      matrix:
+        include:
+          - course: copyright # 知的財産系（第1〜5章）
+            dir: edu-copyright
+          - course: cyber # サイバー犯罪系（個人情報・サイバー犯罪・マルウェア）
+            dir: edu-cyber
+    env:
+      # ビルドする教材（src/content/index.ts の COURSES）
+      NEXT_PUBLIC_COURSE: ${{ matrix.course }}
+      # FTP サーバー上のアップロード先（ログイン直後のフォルダーからの相対パス）
+      REMOTE_DIR: digital/${{ matrix.dir }}
+      # 公開 URL のパス部分
+      BASE_PATH: /omaesensei/digital/${{ matrix.dir }}
     steps:
       # 認証情報はリポジトリごとに登録が必要（Settings → Secrets and variables → Actions）
       - name: Check FTP secrets
@@ -83,6 +103,14 @@ jobs:
 
       - name: Install lftp
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      # mirror --delete はアップロード先の中身を out/ と同じにするので、
+      # フォルダーを取り違えて別の教材を消さないよう、書き出した教材を確かめてからアップロードする
+      - name: Check the export is the right course
+        run: |
+          title=$(node -e "const c=require('./src/content/'+process.env.NEXT_PUBLIC_COURSE+'/chapter1.json'); console.log(c.title)")
+          grep -qF "$title" out/chapter/1/index.html \
+            || { echo "::error::out/ が $NEXT_PUBLIC_COURSE の教材になっていません（第1章「$title」が見つからない）"; exit 1; }
 
       - name: Upload via FTPS
         env:

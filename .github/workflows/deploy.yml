@@ -29,16 +29,50 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build static export
-        run: npm run build
+      # 2つの教材を別々にビルドし、サイトの別のフォルダーに置く（FTP と同じフォルダー名）
+      #   知的財産系　：https://renly24.github.io/Intellectual-Property-Rights-IPR-Overview/edu-copyright/
+      #   サイバー犯罪系：https://renly24.github.io/Intellectual-Property-Rights-IPR-Overview/edu-cyber/
+      - name: Build static exports
         env:
-          # 公開 URL: https://renly24.github.io/Intellectual-Property-Rights-IPR-Overview/
-          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          mkdir -p site
+          for pair in copyright:edu-copyright cyber:edu-cyber; do
+            course="${pair%%:*}"; dir="${pair#*:}"
+            rm -rf out
+            NEXT_PUBLIC_COURSE="$course" NEXT_PUBLIC_BASE_PATH="/$REPO/$dir" npm run build
+            mv out "site/$dir"
+          done
+          # サイトの入り口：2つの教材へのリンク
+          cat > site/index.html <<'HTML'
+          <!doctype html>
+          <html lang="ja">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>情報Ⅰ 教材</title>
+          <style>
+            body { margin: 0; font-family: "Hiragino Sans", "Yu Gothic UI", sans-serif; background: #F7F8FA; color: #1C2433; }
+            main { max-width: 640px; margin: 0 auto; padding: 48px 16px; display: grid; gap: 16px; }
+            a { display: block; padding: 20px 24px; background: #fff; border: 1px solid #E3E6EC; border-radius: 12px;
+                color: inherit; text-decoration: none; font-size: 1.2rem; font-weight: 700; }
+            a:hover { border-color: #1D4ED8; }
+          </style>
+          </head>
+          <body>
+          <main>
+            <h1>情報Ⅰ 教材</h1>
+            <a href="edu-copyright/">著作権を学ぼう（知的財産権）</a>
+            <a href="edu-cyber/">個人情報とサイバー犯罪を学ぼう</a>
+          </main>
+          </body>
+          </html>
+          HTML
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out
+          path: ./site
 
   deploy:
     environment:
